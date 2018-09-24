@@ -1,0 +1,1 @@
+/home/giovanni/Uchile/Vision_computacional/tarea_1/src/src_conv/CMakeFiles/conv.dir
