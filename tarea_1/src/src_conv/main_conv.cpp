@@ -17,9 +17,9 @@ using namespace cv;
 void convolucion(Mat input, Mat mask, Mat output)
 {
 	// POR HACER: Programar la convolucion aca
-	for (int r=0; r<input.rows; r++)
+	for (int r=mask.rows/2; r<input.rows-mask.rows/2; r++)
 	{
-		for (int c=0 ; c<input.cols; c++)
+		for (int c=mask.cols/2 ; c<input.cols-mask.cols/2; c++)
 		{
 			float out=0.0;
 
@@ -27,9 +27,7 @@ void convolucion(Mat input, Mat mask, Mat output)
 			{
 				for (int j=0; j<mask.cols;j++)
 				{
-					if (r-mask.rows/2+i>=0 && r-mask.rows/2+i<input.rows && c-mask.cols/2+j>=0 && c-mask.cols/2+j<input.cols){
-						out=out+input.at<float>(r-mask.rows/2+i,c-mask.cols/2+j)*mask.at<float>(i,j);
-					}
+					out=out+input.at<float>(r-mask.rows/2+i,c-mask.cols/2+j)*mask.at<float>(i,j);
 			
 				}
 			}
@@ -89,28 +87,16 @@ Mat fft(Mat I)
 	return res;
 }
 
-int main(void)
-{
-	Mat originalRGB = imread("corteza.png"); //Leer imagen
-
-	if(originalRGB.empty()) // No encontro la imagen
-	{
-		cout << "Imagen no encontrada" << endl;
-		return 1;
-	}
-	
-	Mat original;
-	cvtColor(originalRGB, original, CV_BGR2GRAY);
-	
+void A(Mat original){
 	Mat input;
 	original.convertTo(input, CV_32FC1);
 	
 	// Ejemplo: filtro recto 5x5
-	Mat mask = Mat(5, 5, CV_32FC1);
+	Mat mask = Mat(3, 3, CV_32FC1);
 
-	for (int i=0; i<5; i++)
-		for (int j=0; j<5; j++)
-			mask.at<float>(i,j) = 1.0/25;
+	for (int i=0; i<3; i++)
+		for (int j=0; j<3; j++)
+			mask.at<float>(i,j) = 1.0/9;
 
 	Mat output = input.clone();	
 
@@ -139,6 +125,171 @@ int main(void)
 	imshow("filtered", last);   // Mostrar imagen
 	imwrite("filtered.jpg", last); // Grabar imagen
 	cvWaitKey(0); // Pausa, permite procesamiento interno de OpenCV
+}
+
+void B(Mat original){
+	Mat input;
+	original.convertTo(input, CV_32FC1);
+	
+	// Ejemplo: filtro recto 5x5
+	Mat mask = Mat(1, 3, CV_32FC1);
+
+	for (int i=0; i<1; i++)
+		for (int j=0; j<3; j++)
+			mask.at<float>(i,j) = 1.0/3;
+
+	Mat output1 = input.clone();	
+
+	convolucion(input, mask, output1);
+
+	Mat mask2 = Mat(3, 1, CV_32FC1);
+
+	for (int i=0; i<3; i++)
+		for (int j=0; j<1; j++)
+			mask2.at<float>(i,j) = 1.0/3;
+
+	Mat output = output1.clone();	
+
+	convolucion(output1, mask2, output);
+
+	//---------------------------
+	imshow("original", original);   // Mostrar imagen
+	//imwrite("original.jpg", input); // Grabar imagen
+	//---------------------------
+
+	Mat esp_in;
+	esp_in = fft(input);
+	imshow("spectrum_in", esp_in);
+	imwrite("spectrum_in.jpg", esp_in); // Grabar imagen
+
+	Mat esp_out;
+	esp_out = fft(output);
+	imshow("spectrum_out_B", esp_out);
+	imwrite("spectrum_out.jpg", esp_out); // Grabar imagen
+
+	output = abs(output);
+
+	Mat last;
+	output.convertTo(last, CV_8UC1);
+
+	imshow("filtered_B", last);   // Mostrar imagen
+	imwrite("filtered.jpg", last); // Grabar imagen
+	cvWaitKey(0); // Pausa, permite procesamiento interno de OpenCV
+}
+
+void C(Mat original){
+	Mat input;
+	original.convertTo(input, CV_32FC1);
+	
+	// Ejemplo: filtro recto 5x5
+	Mat mask = Mat(5, 5, CV_32FC1);
+
+	float sig=1.0;
+
+	for (int i=0; i<5; i++){
+		for (int j=0; j<5; j++){
+			mask.at<float>(i,j) = exp(-(1/(2*sig*sig))*((i-mask.rows/2)*(i-mask.rows/2)+(j-mask.cols/2)*(j-mask.cols/2)))/(2*3.1415*sig*sig);
+			//cout<<float out=exp(-(1/(2*sig*sig))*((i-mask.rows/2)*(i-mask.rows/2)+(j-mask.cols/2)*(j-mask.cols/2)))/(2*3.1415*sig*sig);
+			//cout<< ' ';
+		}
+		//cout<< "\n";
+	}
+	Mat output = input.clone();	
+
+	convolucion(input, mask, output);
+
+	//---------------------------
+	imshow("original", original);   // Mostrar imagen
+	//imwrite("original.jpg", input); // Grabar imagen
+	//---------------------------
+
+	Mat esp_in;
+	esp_in = fft(input);
+	imshow("spectrum_in", esp_in);
+	imwrite("spectrum_in.jpg", esp_in); // Grabar imagen
+
+	Mat esp_out;
+	esp_out = fft(output);
+	imshow("spectrum_outC", esp_out);
+	imwrite("spectrum_out.jpg", esp_out); // Grabar imagen
+
+	output = abs(output);
+
+	Mat last;
+	output.convertTo(last, CV_8UC1);
+
+	imshow("filteredC", last);   // Mostrar imagen
+	imwrite("filtered.jpg", last); // Grabar imagen
+	cvWaitKey(0); // Pausa, permite procesamiento interno de OpenCV
+}
+
+void D(Mat original){
+	Mat input;
+	original.convertTo(input, CV_32FC1);
+	
+	// Ejemplo: filtro recto 5x5
+	Mat mask = Mat(1, 5, CV_32FC1);
+	float sig=1.0;
+	for (int i=0; i<1; i++)
+		for (int j=0; j<5; j++)
+			mask.at<float>(i,j) = exp(-(1/(2*sig*sig))*((i-mask.rows/2)*(i-mask.rows/2)+(j-mask.cols/2)*(j-mask.cols/2)))/(sqrt(2*3.1415)*sig);
+
+	Mat output1 = input.clone();	
+
+	convolucion(input, mask, output1);
+
+	Mat mask2 = Mat(5, 1, CV_32FC1);
+
+	for (int i=0; i<5; i++)
+		for (int j=0; j<1; j++)
+			mask2.at<float>(i,j) = exp(-(1/(2*sig*sig))*((i-mask2.rows/2)*(i-mask2.rows/2)+(j-mask2.cols/2)*(j-mask2.cols/2)))/(sqrt(2*3.1415)*sig);;
+
+	Mat output = output1.clone();	
+
+	convolucion(output1, mask2, output);
+
+	//---------------------------
+	imshow("original", original);   // Mostrar imagen
+	//imwrite("original.jpg", input); // Grabar imagen
+	//---------------------------
+
+	Mat esp_in;
+	esp_in = fft(input);
+	imshow("spectrum_in", esp_in);
+	imwrite("spectrum_in.jpg", esp_in); // Grabar imagen
+
+	Mat esp_out;
+	esp_out = fft(output);
+	imshow("spectrum_out_D", esp_out);
+	imwrite("spectrum_out.jpg", esp_out); // Grabar imagen
+
+	output = abs(output);
+
+	Mat last;
+	output.convertTo(last, CV_8UC1);
+
+	imshow("filtered_D", last);   // Mostrar imagen
+	imwrite("filtered.jpg", last); // Grabar imagen
+	cvWaitKey(0); // Pausa, permite procesamiento interno de OpenCV
+}
+
+int main(void)
+{
+	Mat originalRGB = imread("corteza.png"); //Leer imagen
+
+	if(originalRGB.empty()) // No encontro la imagen
+	{
+		cout << "Imagen no encontrada" << endl;
+		return 1;
+	}
+	
+	Mat original;
+	cvtColor(originalRGB, original, CV_BGR2GRAY);
+	
+	A(original);
+	B(original);
+	C(original);
+	D(original);
 
 	return 0; // Sale del programa normalmente
 }
