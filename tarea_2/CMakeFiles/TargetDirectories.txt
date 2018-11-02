@@ -1,0 +1,1 @@
+/home/giovanni/Uchile/Vision_computacional/tarea_2/CMakeFiles/tarea2.dir
