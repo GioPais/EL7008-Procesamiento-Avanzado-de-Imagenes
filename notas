@@ -1,0 +1,44 @@
+C++ es mejor para trabajar en bajo nivel, para trabajar con pixeles. Se puede reducir el tiempo de 100 a 1.
+- Ver compatibilidad de Visual Studio con OpenCV
+- Compilador: Cmake y g++ (IDE Clion hay licencia por la u)
+- Recomienda usar cmake. Para generar un entorno especifico, para la tarea entregan el CmakeList.txt
+- Despues de compilar Cmake genera un ejecutable que hace todo.
+- Muestra como hacer el Cmakelist simple (Hay GUI para Cmake)
+- En el configure se pueden modificar variables, version OpenCV. Es compatible en distintas plataformas.
+- Tipos de datos
+- Funciones se pueden: Declarar, Definir, Usar (Se puede llamar solo si hay declaración, definicion podría estar a parte. .h solo tiene declaraciones)
+- Arreglos estáticos y dinamicos (cuidado con pasarse del indice, entregará basura. No verifica tanto y así es más rápido)(dinamico: vectores, push back (resize(más rápido)  vs push back))
+- Arreglo estático de varias dimensiones
+- OpenCV tiene ventajas para archivos en que desconozco su tamaño para definirlo
+- Llamar métodos que se pueden llamar, public??
+- Valor o referencia. Si queremos una copia se usa (double val) y si no queremos una copia (double &val)
+- Para pasar arreglos como argumento siempre se usa con referencias, notación de puntero.
+- Pasar arreglos dinamicos y estaticos
+- Para usar arreglos como argumentos hay problemas con conocer las dimensiones. Mejor usar libs como OpenCV
+- TIPS
+
+OpenCV
+- Ver compatibilidad de OpenCV cuando se importa
+- Objeto principal: mat
+- Para hacer operaciones como por ejemplo convolución, hay que usar float en vez de int
+- Se definen objetos con cantidad de bits y canales
+- Problema de uchar--> overflow
+- float < -- > uchar
+- waitkey es necesario para mostrar ventana con imagen
+
+Tarea
+- Programar conv desde 0 (No se deben usar funciones ya programadas)
+- manejar bordes de distintas formas
+- usar fft SOLO para ver efecto del filtro
+- 2. Hacer histograma y hacer ecualización
+- Nos pasan función incompleta y debemos completar
+- Nuevamente no se pueden usar funciones ya hechas
+
+Ejemplo:
+- Ver como usar cmake sin catkin_make
+- cmake ..
+- make <archivo makeFile>
+- Hacer informe con imágenes generadas.
+- Subir informe.pdf y código
+
+Correr en GNU, no es la mejor idea. Si es Nvidia se usa cuda

@@ -15,97 +15,51 @@ using namespace cv;
 
 Mat harrisFilter(Mat input_raw)
 {
-	int scale = 1;
-  	int delta = 0;
-  	int ddepth = CV_32FC1;//CV_8UC1;
-  	//int ddepth2 = CV_32FC1;
+	int ddepth = CV_32FC1;
   	Mat input;
 
-  	input.convertTo(input, ddepth);
+  	//input.convertTo(input, ddepth);
 	cvtColor(input_raw, input, CV_BGR2GRAY);
 
-	Mat harris = Mat::zeros(input.rows, input.cols, ddepth);
-	Mat input_blur = Mat::zeros(input.rows, input.cols, ddepth);
+	//Mat harris = Mat::zeros(input.rows, input.cols, ddepth);
 
-
-	//Mat kernel = Mat::zeros(3, 3, CV_32FC1);
 	// Por hacer: calcular filtro de Harris. Para esto:
 	// 1) Suavizar la imagen de entrada
-	GaussianBlur(input,input_blur,Size(3,3),int(1));
+	Mat input_blur;
+	GaussianBlur(input,input_blur,Size(3,3),1);
 	// 2) Calcular derivadas ix e iy
 	Mat grad_x, grad_y;
-  	Mat abs_grad_x, abs_grad_y;
-
   	/// Gradient X
-  	//Scharr( src_gray, grad_x, ddepth, 1, 0, scale, delta, BORDER_DEFAULT );
   	Sobel( input_blur, grad_x, ddepth, 1, 0, 3);
-  	//convertScaleAbs( grad_x, abs_grad_x );
-
   	/// Gradient Y
-  	//Scharr( src_gray, grad_y, ddepth, 0, 1, scale, delta, BORDER_DEFAULT );
   	Sobel( input_blur, grad_y, ddepth, 0, 1, 3);
-  	//convertScaleAbs( grad_y, abs_grad_y );
-
-
+  	
 	// 3) Calcular momentos ixx, ixy, iyy
   	Mat ixx = grad_x.mul(grad_x); //(elemento a elemento)
 	Mat ixy = grad_x.mul(grad_y); //(elemento a elemento)
 	Mat iyy = grad_y.mul(grad_y); //(elemento a elemento)
 	// 4) Suavizar momentos ixx, ixy, iyy
-	GaussianBlur(ixx,ixx,Size(3,3),int(1));
-	GaussianBlur(ixy,ixy,Size(3,3),int(1));
-	GaussianBlur(iyy,iyy,Size(3,3),int(1));
+	GaussianBlur(ixx,ixx,Size(3,3),1);
+	GaussianBlur(ixy,ixy,Size(3,3),1);
+	GaussianBlur(iyy,iyy,Size(3,3),1);
 	// 5) Calcular harris como: det(m) - 0.04*Tr(m)^2, con:
-	//      m = [ixx, ixy; ixy, iyy]
-	//      det(m) = ixx*iyy - ixy*ixy;
-	//      Tr(m) = ixx + iyy
 	Mat det = ixx.mul(iyy) - ixy.mul(ixy);
 	Mat Tr = ixx + iyy;
-	harris = det - 0.04*Tr.mul(Tr); 
+	Mat harris = det - 0.04*Tr.mul(Tr); 
 	// Ademas se debe transformar la imagen de harris para que quede en el rango 0-255
-	Mat output;
-	normalize(harris, output, 0, 255, NORM_MINMAX, ddepth);
-	output.convertTo(output, CV_8UC1);
-	return output;
+	Mat harris_n;
+	normalize(harris, harris_n, 0, 255, NORM_MINMAX, ddepth);
+	harris_n.convertTo(harris_n, CV_8UC1);
+	return harris_n;
 }
 
 vector<KeyPoint> getHarrisPoints(Mat harris, int val)
 {
 	vector<KeyPoint> points;
 	// Por hacer: buscar puntos de harris que sean:
-	// 1) Maximos locales, y
-	Mat grad_x,grad_y;
-	Sobel( harris, grad_x, CV_32FC1, 1, 0, 3);
-  	Sobel( harris, grad_y, CV_32FC1, 0, 1, 3);
-
-  	int max_counter=0;
-  	int hp_counter=0;
-
-  	Mat harris_p;
-  	harris.convertTo(harris_p, CV_8UC1);
-  	//cout << harris;
-  	//cout << "\n";
-
- //  	for (int r=10; r<harris.rows-10; r++){
-	// 	for (int c=10 ; c<harris.cols-10; c++){
-			
-	// 		if (grad_x.at<float>(r,c)==0.0 && grad_y.at<float>(r,c)==0.0){
-	// 			max_counter+=1;
-	// 			//cout << harris.at<char>(r,c);
-	// 			//cout << "\n";
-	// 			if(harris.at<char>(r,c)>(char)val){
-	// 				hp_counter+=1;
-	// 			}
-	// 		}
-	// 		//input.at<float>(r,c)
-	// 		//out+=input.at<float>(r,c)
-			
-	// 	}
-	// }
-
-  	int windows_r=20;
-  	int windows_c=20;
-
+	// 1) Maximos locales
+	int windows_r=5;
+  	int windows_c=5;
 
 	for (int r=0; r<harris.rows/windows_r; r++){
 		for (int c=0 ; c<harris.cols/windows_c; c++){
@@ -123,33 +77,35 @@ vector<KeyPoint> getHarrisPoints(Mat harris, int val)
 					
 				}
 			}
+			// 2) Mayores que el umbral val
 			if(harris.at<char>(r_max,c_max)>(char)val){
- 				hp_counter+=1;
- 				harris_p.at<char>(r_max,c_max)=0;
+ 				KeyPoint KP=KeyPoint(c_max,r_max,1);
+ 				points.push_back(KP);
  			}
 		}
 	}
-
-
-  	int pixeles=(harris.rows-10)*(harris.cols-10);
-	
+  	int pixeles=(harris.rows)*(harris.cols);	
 	cout << "Harris point encontrados: ";
-	cout << hp_counter;
+	cout << points.size();
 	cout << "/";
 	cout << pixeles;
 	cout << "\n";
 
-  	imshow("Harris", harris);
-  	imshow("Harris_point", harris_p);
-	cvWaitKey(0);
-	// 2) Mayores que el umbral val
 	return points;
 }
 
 int main(void)
 {
-	Mat imleft = imread("left1.png");
-	Mat imright = imread("right1.png");
+	String n;
+	cin >> n;
+	String img_type=".jpg";
+	if(n=="1"){
+		img_type=".png";
+	}
+	String left= "left" + n + img_type+"";
+	String right= "right" + n + img_type+"";//img_type;
+	Mat imleft = imread(left);
+	Mat imright = imread(right);
 
 	//
 	imshow("original", imleft);
@@ -166,20 +122,107 @@ int main(void)
 	harrisleft = harrisFilter(imleft);
 	harrisright = harrisFilter(imright);
 
-	imwrite("harrisleft.jpg", harrisleft); // Grabar imagen
-	imwrite("harrisright.jpg", harrisright); // Grabar imagen
-	imshow("harrisleft", harrisleft);
+	imwrite(n+"harrisleft.jpg", harrisleft); // Grabar imagen
+	imwrite(n+"harrisright.jpg", harrisright); // Grabar imagen
+	//imshow("harrisleft", harrisleft);
 	//
+	//cvWaitKey(0);
+	//
+	std::string const s = ("ORB"); 
+
+	Ptr<ORB> orb = ORB::create(s);
+
+	int vall[4]={110,115,100,100};
+	int valr[4]={115,120,90,80};
+	float wfactor[4]={1.60,1.9,1.5,1.4};
+	float hfactor[4]={1.25,1.1,1.05,1.05};
+
+	int idx;
+	if (n=="1"){idx=0;}
+	if (n=="2"){idx=1;}
+	if (n=="3"){idx=2;}
+	if (n=="4"){idx=3;}
+
+	vector<KeyPoint> pointsleft = getHarrisPoints(harrisleft, vall[idx]);
+	vector<KeyPoint> pointsright = getHarrisPoints(harrisright, valr[idx]);
+
+	//-----------
+	Mat l_points,r_points;
+	drawKeypoints(imleft,pointsleft,l_points);
+	imshow("left_points", l_points);
+	drawKeypoints(imright,pointsright,r_points);
+	imshow("right_points", r_points);
 	cvWaitKey(0);
-	//
-	//Ptr<ORB> orb = ORB::create(int nfeatures=500, float scaleFactor=1.2f,int nlevels=8,int edgeThreshold=31,int firstLevel=0,int WTA_K=2,int scoreType=ORB::HARRIS_SCORE,
-	//	int  	patchSize = 31,
-	//	int  	fastThreshold = 20 );
-	vector<KeyPoint> pointsleft = getHarrisPoints(harrisleft, 92);
-	vector<KeyPoint> pointsright = getHarrisPoints(harrisright, 112);
-	//Mat descrleft, descrright;
-	//orb->compute(imleft, pointsleft, descrleft);
-	//orb->compute(imright, pointsright, descrright);
+	//-----------
+	imwrite(n+"l_points.jpg", l_points); // Grabar imagen
+	imwrite(n+"r_points.jpg", r_points); // Grabar imagen
+
+	Mat descrleft, descrright;
+	orb->compute(imleft, pointsleft, descrleft);
+	orb->compute(imright, pointsright, descrright);
+
+
+	vector<DMatch> matches;
+	BFMatcher matcher(NORM_HAMMING);
+    matcher.match(descrleft, descrright, matches);
+    //(4)--------------------------------------
+    Mat img_matches;
+    drawMatches(imleft,pointsleft,imright,pointsright,matches,img_matches);
+
+    imshow("matches", img_matches);
+	cvWaitKey(0);
+	
+	imwrite(n+"matches.jpg", img_matches); // Grabar imagen	
+
+	cout << "Matches: " << matches.size() << endl;
+
+	//FILTRAR MATCHES
+	sort(matches.begin(), matches.end());
+	float K=0.2;
+	int KMatches = matches.size()*K;
+	matches.erase(matches.begin() + KMatches, matches.end());
+
+	cout << "Matches Filtrados: " << matches.size() << endl;
+	
+	drawMatches(imleft,pointsleft,imright,pointsright,matches,img_matches);
+
+    imshow("matches_Filtrados", img_matches);
+	cvWaitKey(0);
+	imwrite(n+"matchesF.jpg", img_matches);
+	//(5)--------------------------------------
+	vector<Point2f> points1, points2;
+	for (int i=0;i<matches.size();i++){
+		points1.push_back(Point2f(pointsleft[ matches[i].queryIdx ].pt));
+		points2.push_back(Point2f(pointsright[ matches[i].trainIdx ].pt));	
+	}
+	
+	//cout << points1<<"\n";
+
+	//(6)--------------------------------------
+	Mat H = findHomography( points2, points1, CV_RANSAC );
+	cout<< H<<"\n";
+
+
+	//(7)--------------------------------------
+	//Mat imFused= Mat::zeros((imleft.rows), (imleft.cols)*2, CV_32FC1);
+
+	//(8)--------------------------------------
+	Mat r_warp;
+	warpPerspective(imright, r_warp, H, Size(imleft.cols*wfactor[idx],imleft.rows*hfactor[idx]));
+
+	//imshow("r_warp", r_warp);
+	//cvWaitKey(0);
+
+	Mat imfused(r_warp.size(), CV_8UC3);
+	Mat imfused_left = imfused(Rect(0, 0, imleft.cols, imleft.rows));
+	Mat imfused_right = imfused(Rect(0, 0, r_warp.cols, r_warp.rows));
+	r_warp.copyTo(imfused_right);
+	imleft.copyTo(imfused_left);
+	String PATH="/Uchile/Vision_computacional/tarea_2";
+	imshow("imFused", imfused);
+	cvWaitKey(0);
+
+	imwrite(n+"alineadas.jpg", imfused); // Grabar imagen
 
 	// El codigo indicado arriba usa Harris para detectar puntos de interes, y luego descriptores ORB
 	// Por hacer:
